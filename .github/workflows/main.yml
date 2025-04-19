@@ -1,0 +1,19 @@
+name: Flutter build windows
+on: [push]
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: windows-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable # or: beta, master (or main)
+      - run: flutter --version
+      - run: flutter pub get
+      - run: flutter build windows --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flutter-win
+          path: .\build\windows\x64\runner\Release
