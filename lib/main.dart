@@ -4,7 +4,6 @@ import 'package:web_socket_channel/io.dart';
 import 'settings_page.dart';
 
 class SettingsProvider extends ChangeNotifier {
-  // 示例设置项
   bool darkMode = false;
   String serverAddress = '';
 
@@ -30,7 +29,6 @@ void main() {
   );
 }
 
-// 应用程序的根Widget
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -38,21 +36,69 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     return MaterialApp(
-      title: 'WebSocket调试器',  // 更改标题以反映实际功能
+      title: 'WebSocket 调试器',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
         brightness: settings.darkMode ? Brightness.dark : Brightness.light,
       ),
-      home: const TcpDebuggerPage(),
-      routes: {
-        '/settings': (_) => const SettingsPage(),
-      },
+      home: const HomePage(),
     );
   }
 }
 
-// WebSocket调试器的主页面
+/// 整个应用的底部导航栏容器
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _currentIndex = 0;
+
+  // 两个 Tab 页：调试器页面和设置页面
+  static const List<Widget> _pages = <Widget>[
+    TcpDebuggerPage(),
+    SettingsPage(),
+  ];
+
+  static const List<BottomNavigationBarItem> _items =
+      <BottomNavigationBarItem>[
+    BottomNavigationBarItem(
+      icon: Icon(Icons.computer),
+      label: '调试器',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.settings),
+      label: '设置',
+    ),
+  ];
+
+  void _onTap(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // body 根据当前索引在 _pages 中切换
+      body: _pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: _items,
+        currentIndex: _currentIndex,
+        onTap: _onTap,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Colors.grey,
+      ),
+    );
+  }
+}
+
+/// WebSocket 调试器主页面
 class TcpDebuggerPage extends StatefulWidget {
   const TcpDebuggerPage({super.key});
 
@@ -61,24 +107,17 @@ class TcpDebuggerPage extends StatefulWidget {
 }
 
 class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
-  // 用于控制输入框的控制器
-  final TextEditingController _ipController = TextEditingController(text: '127.0.0.1');
-  final TextEditingController _portController = TextEditingController(text: '8080');
+  final TextEditingController _ipController =
+      TextEditingController(text: '127.0.0.1');
+  final TextEditingController _portController =
+      TextEditingController(text: '8080');
   final TextEditingController _sendController = TextEditingController();
-  
-  // 存储接收到的数据
-  final List<String> _receivedData = [];
-  
-  // WebSocket连接通道
-  IOWebSocketChannel? _channel;
-  
-  // 连接状态标志
-  bool _isConnected = false;
-  
-  // 添加协议类型选择
-  String _protocol = 'ws';  // 默认为WebSocket
 
-  // 修改连接方法
+  final List<String> _receivedData = [];
+  IOWebSocketChannel? _channel;
+  bool _isConnected = false;
+  String _protocol = 'ws';
+
   void _connect() async {
     if (_isConnected) {
       _channel?.sink.close();
@@ -90,37 +129,33 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
     }
 
     try {
-      // 根据协议类型构建不同的连接URL
-      final url = _protocol == 'ws' 
-          ? 'ws://${_ipController.text}'
+      final url = _protocol == 'ws'
+          ? _ipController.text // 完整 ws:// 地址
           : 'ws://${_ipController.text}:${_portController.text}';
-      
+
       final channel = IOWebSocketChannel.connect(url);
-      
       setState(() {
         _channel = channel;
         _isConnected = true;
       });
 
-      // 监听WebSocket数据流
       _channel?.stream.listen(
-        // 数据接收处理
         (data) {
           setState(() {
             _receivedData.add('收到: $data');
           });
         },
-        // 错误处理
         onError: (error) {
           setState(() {
             _isConnected = false;
             _channel = null;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('连接错误: $error')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('连接错误: $error')),
+            );
+          }
         },
-        // 连接关闭处理
         onDone: () {
           setState(() {
             _isConnected = false;
@@ -129,37 +164,32 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
         },
       );
     } catch (e) {
-      // 连接异常处理
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('连接失败: $e')),
       );
     }
   }
 
-  // 发送数据
   void _sendData() {
     if (!_isConnected || _sendController.text.isEmpty) return;
-    
+
     try {
-      // 通过WebSocket发送数据
       _channel?.sink.add(_sendController.text);
       setState(() {
         _receivedData.add('发送: ${_sendController.text}');
-        _sendController.clear();  // 清空输入框
+        _sendController.clear();
       });
     } catch (e) {
-      // 发送异常处理
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('发送失败: $e')),
       );
     }
   }
 
-  // 资源释放
   @override
   void dispose() {
-    _channel?.sink.close();  // 关闭WebSocket连接
-    _ipController.dispose();  // 释放控制器资源
+    _channel?.sink.close();
+    _ipController.dispose();
     _portController.dispose();
     _sendController.dispose();
     super.dispose();
@@ -169,25 +199,16 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text('WebSocket 调试器'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('WebSocket调试器'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.pushNamed(context, '/settings');
-            },
-          ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // 连接设置区域
+            // 连接设置
             Row(
               children: [
-                // 协议选择下拉菜单
                 DropdownButton<String>(
                   value: _protocol,
                   items: const [
@@ -203,19 +224,18 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
                   },
                 ),
                 const SizedBox(width: 16),
-                // IP地址/链接输入框
                 Expanded(
                   flex: 2,
                   child: TextField(
                     controller: _ipController,
                     decoration: InputDecoration(
-                      labelText: _protocol == 'ws' ? '链接' : 'IP地址',  // 根据协议类型动态改变标签
+                      labelText:
+                          _protocol == 'ws' ? '完整链接（ws://...）' : 'IP 地址',
                       border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
                 const SizedBox(width: 16),
-                // 端口输入框 - 仅在TCP模式下显示
                 if (_protocol == 'tcp') ...[
                   Expanded(
                     child: TextField(
@@ -229,18 +249,18 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
                   ),
                   const SizedBox(width: 16),
                 ],
-                // 连接/断开按钮
                 ElevatedButton(
                   onPressed: _connect,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isConnected ? Colors.red : Colors.green,
+                    backgroundColor:
+                        _isConnected ? Colors.red : Colors.green,
                   ),
                   child: Text(_isConnected ? '断开' : '连接'),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            // 数据显示区域
+            // 接收数据区
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(8),
@@ -257,7 +277,7 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
               ),
             ),
             const SizedBox(height: 16),
-            // 数据发送区域
+            // 发送数据区
             Row(
               children: [
                 Expanded(
