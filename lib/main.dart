@@ -1,8 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:web_socket_channel/io.dart';
+import 'settings_page.dart';
+
+class SettingsProvider extends ChangeNotifier {
+  // 示例设置项
+  bool darkMode = false;
+  String serverAddress = '';
+
+  void setDarkMode(bool value) {
+    darkMode = value;
+    notifyListeners();
+  }
+
+  void setServerAddress(String value) {
+    serverAddress = value;
+    notifyListeners();
+  }
+}
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 // 应用程序的根Widget
@@ -11,13 +36,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = Provider.of<SettingsProvider>(context);
     return MaterialApp(
       title: 'WebSocket调试器',  // 更改标题以反映实际功能
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
+        brightness: settings.darkMode ? Brightness.dark : Brightness.light,
       ),
       home: const TcpDebuggerPage(),
+      routes: {
+        '/settings': (_) => const SettingsPage(),
+      },
     );
   }
 }
@@ -141,6 +171,14 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('WebSocket调试器'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.pushNamed(context, '/settings');
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
