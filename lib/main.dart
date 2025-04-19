@@ -44,11 +44,13 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
   
   // 连接状态标志
   bool _isConnected = false;
+  
+  // 添加协议类型选择
+  String _protocol = 'ws';  // 默认为WebSocket
 
-  // 处理连接/断开连接
+  // 修改连接方法
   void _connect() async {
     if (_isConnected) {
-      // 如果已连接，则断开连接
       _channel?.sink.close();
       setState(() {
         _isConnected = false;
@@ -58,10 +60,12 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
     }
 
     try {
-      // 创建新的WebSocket连接
-      final channel = IOWebSocketChannel.connect(
-        'ws://${_ipController.text}:${_portController.text}',
-      );
+      // 根据协议类型构建不同的连接URL
+      final url = _protocol == 'ws' 
+          ? 'ws://${_ipController.text}'
+          : 'ws://${_ipController.text}:${_portController.text}';
+      
+      final channel = IOWebSocketChannel.connect(url);
       
       setState(() {
         _channel = channel;
@@ -145,30 +149,48 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
             // 连接设置区域
             Row(
               children: [
-                // IP地址输入框
+                // 协议选择下拉菜单
+                DropdownButton<String>(
+                  value: _protocol,
+                  items: const [
+                    DropdownMenuItem(value: 'ws', child: Text('WebSocket')),
+                    DropdownMenuItem(value: 'tcp', child: Text('TCP')),
+                  ],
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _protocol = newValue;
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(width: 16),
+                // IP地址/链接输入框
                 Expanded(
                   flex: 2,
                   child: TextField(
                     controller: _ipController,
-                    decoration: const InputDecoration(
-                      labelText: 'IP地址',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: _protocol == 'ws' ? '链接' : 'IP地址',  // 根据协议类型动态改变标签
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
                 const SizedBox(width: 16),
-                // 端口输入框
-                Expanded(
-                  child: TextField(
-                    controller: _portController,
-                    decoration: const InputDecoration(
-                      labelText: '端口',
-                      border: OutlineInputBorder(),
+                // 端口输入框 - 仅在TCP模式下显示
+                if (_protocol == 'tcp') ...[
+                  Expanded(
+                    child: TextField(
+                      controller: _portController,
+                      decoration: const InputDecoration(
+                        labelText: '端口',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
                     ),
-                    keyboardType: TextInputType.number,
                   ),
-                ),
-                const SizedBox(width: 16),
+                  const SizedBox(width: 16),
+                ],
                 // 连接/断开按钮
                 ElevatedButton(
                   onPressed: _connect,
