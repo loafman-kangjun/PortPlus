@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:port_plus/services/socket_manager.dart'; // 引入 SocketManager
+import 'package:port_plus/services/socket_manager.dart';
+import 'package:port_plus/components/connection_panel.dart';
+import 'package:port_plus/components/received_data_display.dart';
+import 'package:port_plus/components/send_data_panel.dart';
 
 class TcpDebuggerPage extends StatefulWidget {
   const TcpDebuggerPage({super.key});
@@ -22,7 +25,6 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
 
   void _connect() async {
     if (_isConnected) {
-      // 已连接则关闭
       _socketManager?.disconnect();
       setState(() {
         _isConnected = false;
@@ -111,93 +113,29 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Row(
-              children: [
-                DropdownButton<String>(
-                  value: _protocol,
-                  items: const [
-                    DropdownMenuItem(value: 'ws', child: Text('WebSocket')),
-                    DropdownMenuItem(value: 'tcp', child: Text('TCP')),
-                  ],
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _protocol = newValue;
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    controller: _ipController,
-                    decoration: InputDecoration(
-                      labelText: _protocol == 'ws'
-                          ? '完整链接（ws://...）'
-                          : 'IP 地址',
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                if (_protocol == 'tcp') ...[
-                  Expanded(
-                    child: TextField(
-                      controller: _portController,
-                      decoration: const InputDecoration(
-                        labelText: '端口',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                ],
-                ElevatedButton(
-                  onPressed: _connect,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        _isConnected ? Colors.red : Colors.green,
-                  ),
-                  child: Text(_isConnected ? '断开' : '连接'),
-                ),
-              ],
+            ConnectionPanel(
+              protocol: _protocol,
+              ipController: _ipController,
+              portController: _portController,
+              isConnected: _isConnected,
+              onProtocolChanged: (newProtocol) {
+                setState(() {
+                  _protocol = newProtocol;
+                });
+              },
+              onConnect: _connect,
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: ListView.builder(
-                  itemCount: _receivedData.length,
-                  itemBuilder: (context, index) {
-                    return Text(_receivedData[index]);
-                  },
-                ),
+              child: ReceivedDataDisplay(
+                receivedData: _receivedData,
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _sendController,
-                    decoration: const InputDecoration(
-                      labelText: '发送数据',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: _isConnected ? _sendData : null,
-                  child: const Text('发送'),
-                ),
-              ],
+            SendDataPanel(
+              sendController: _sendController,
+              isConnected: _isConnected,
+              onSend: _sendData,
             ),
           ],
         ),
