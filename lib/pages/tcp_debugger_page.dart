@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:web_socket_channel/io.dart';
+import 'package:port_plus/services/socket_manager.dart'; // 引入 SocketManager
 
 class TcpDebuggerPage extends StatefulWidget {
   const TcpDebuggerPage({super.key});
@@ -16,16 +16,17 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
   final TextEditingController _sendController = TextEditingController();
 
   final List<String> _receivedData = [];
-  IOWebSocketChannel? _channel;
+  SocketManager? _socketManager;
   bool _isConnected = false;
   String _protocol = 'ws';
 
   void _connect() async {
     if (_isConnected) {
-      _channel?.sink.close();
+      // 已连接则关闭
+      _socketManager?.disconnect();
       setState(() {
         _isConnected = false;
-        _channel = null;
+        _socketManager = null;
       });
       return;
     }
@@ -35,13 +36,13 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
           ? _ipController.text
           : 'ws://${_ipController.text}:${_portController.text}';
 
-      final channel = IOWebSocketChannel.connect(url);
+      _socketManager = SocketManager();
+      await _socketManager!.connect(url);
       setState(() {
-        _channel = channel;
         _isConnected = true;
       });
 
-      _channel?.stream.listen(
+      _socketManager!.stream.listen(
         (data) {
           setState(() {
             _receivedData.add('收到: $data');
@@ -50,7 +51,7 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
         onError: (error) {
           setState(() {
             _isConnected = false;
-            _channel = null;
+            _socketManager = null;
           });
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -61,14 +62,16 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
         onDone: () {
           setState(() {
             _isConnected = false;
-            _channel = null;
+            _socketManager = null;
           });
         },
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('连接失败: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('连接失败: $e')),
+        );
+      }
     }
   }
 
@@ -76,7 +79,7 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
     if (!_isConnected || _sendController.text.isEmpty) return;
 
     try {
-      _channel?.sink.add(_sendController.text);
+      _socketManager?.send(_sendController.text);
       setState(() {
         _receivedData.add('发送: ${_sendController.text}');
         _sendController.clear();
@@ -90,7 +93,7 @@ class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
 
   @override
   void dispose() {
-    _channel?.sink.close();
+    _socketManager?.disconnect();
     _ipController.dispose();
     _portController.dispose();
     _sendController.dispose();
