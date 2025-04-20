@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ConnectionPanel extends StatelessWidget {
   final String protocol;
@@ -20,16 +21,25 @@ class ConnectionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isWeb = kIsWeb;
     return Row(
       children: [
         DropdownButton<String>(
           value: protocol,
-          items: const [
-            DropdownMenuItem(value: 'ws', child: Text('WebSocket')),
-            DropdownMenuItem(value: 'tcp', child: Text('TCP')),
+          items: [
+            const DropdownMenuItem(value: 'ws', child: Text('WebSocket')),
+            DropdownMenuItem<String>(
+              value: 'tcp',
+              enabled: !isWeb, // web 上置为不可用
+              child: Text(
+                'TCP',
+                style: TextStyle(color: isWeb ? Colors.grey : null),
+              ),
+            ),
           ],
           onChanged: (String? newValue) {
-            if (newValue != null) {
+            // 如果是 web，选 tcp 不响应
+            if (newValue != null && !(isWeb && newValue == 'tcp')) {
               onProtocolChanged(newValue);
             }
           },
