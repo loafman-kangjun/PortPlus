@@ -35,8 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   provider: ^6.1.1  # 状态管理
-  web_socket_channel: ^2.4.0  # TCP/WebSocket 连接支持
-  flutter_libserialport: ^0.5.0  # 串口通信支持
+  web_socket_channel: ^3.0.3  # TCP/WebSocket 连接支持
 
 dev_dependencies:
   flutter_test:
