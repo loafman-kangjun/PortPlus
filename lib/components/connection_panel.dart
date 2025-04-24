@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:tdesign_flutter/tdesign_flutter.dart';
 
 class ConnectionPanel extends StatelessWidget {
   final String protocol;
@@ -22,27 +23,78 @@ class ConnectionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isWeb = kIsWeb;
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(4),
+      borderSide: BorderSide(
+        color: Colors.grey.shade400,
+        width: 0.8,
+      ),
+    );
     return Row(
       children: [
-        DropdownButton<String>(
-          value: protocol,
-          items: [
-            const DropdownMenuItem(value: 'ws', child: Text('WebSocket')),
-            DropdownMenuItem<String>(
-              value: 'tcp',
-              enabled: !isWeb, // web 上置为不可用
-              child: Text(
-                'TCP',
-                style: TextStyle(color: isWeb ? Colors.grey : null),
+        SizedBox(
+          width: 150,
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              inputDecorationTheme: InputDecorationTheme(
+                border: border,
+                enabledBorder: border,
+                focusedBorder: border.copyWith(
+                  borderSide: BorderSide(
+                    color: Theme.of(context).primaryColor,
+                    width: 1.2,
+                  ),
+                ),
               ),
             ),
-          ],
-          onChanged: (String? newValue) {
-            // 如果是 web，选 tcp 不响应
-            if (newValue != null && !(isWeb && newValue == 'tcp')) {
-              onProtocolChanged(newValue);
-            }
-          },
+            child: DropdownButtonFormField<String>(
+              value: protocol,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                hoverColor: Colors.grey.shade100,
+                suffixIcon: Icon(
+                  Icons.expand_more_rounded,
+                  color: Colors.grey.shade600,
+                  size: 22,
+                ),
+              ),
+              dropdownColor: Colors.white,
+              elevation: 2,
+              borderRadius: BorderRadius.circular(4),
+              // icon设为空，使用自定义suffixIcon
+              icon: const SizedBox.shrink(),
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade800,
+                fontWeight: FontWeight.w400,
+              ),
+              items: [
+                DropdownMenuItem(
+                  value: 'ws',
+                  child: _DropdownItem(
+                    icon: Icons.web,
+                    text: 'WebSocket',
+                  ),
+                ),
+                DropdownMenuItem<String>(
+                  value: 'tcp',
+                  enabled: !isWeb,
+                  child: _DropdownItem(
+                    icon: Icons.settings_ethernet,
+                    text: 'TCP',
+                    isDisabled: isWeb,
+                  ),
+                ),
+              ],
+              onChanged: (String? newValue) {
+                if (newValue != null && !(isWeb && newValue == 'tcp')) {
+                  onProtocolChanged(newValue);
+                }
+              },
+            ),
+          ),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -50,9 +102,7 @@ class ConnectionPanel extends StatelessWidget {
           child: TextField(
             controller: ipController,
             decoration: InputDecoration(
-              labelText: protocol == 'ws'
-                  ? '完整链接（ws://...）'
-                  : 'IP 地址',
+              labelText: protocol == 'ws' ? '完整链接（ws://...）' : 'IP 地址',
               border: const OutlineInputBorder(),
             ),
           ),
@@ -71,12 +121,48 @@ class ConnectionPanel extends StatelessWidget {
           ),
           const SizedBox(width: 16),
         ],
-        ElevatedButton(
-          onPressed: onConnect,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: isConnected ? Colors.red : Colors.green,
+        TDButton(
+          text: isConnected ? '断开' : '连接',
+          size: TDButtonSize.large,
+          type: TDButtonType.fill,
+          shape: TDButtonShape.rectangle,
+          theme: isConnected ? TDButtonTheme.danger : TDButtonTheme.primary,
+          onTap: onConnect,
+        ),
+      ],
+    );
+  }
+}
+
+/// 下拉框项的自定义组件，用于统一样式
+class _DropdownItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final bool isDisabled;
+
+  const _DropdownItem({
+    Key? key,
+    required this.icon,
+    required this.text,
+    this.isDisabled = false,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDisabled
+        ? Theme.of(context).disabledColor
+        : Colors.grey.shade800;
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
           ),
-          child: Text(isConnected ? '断开' : '连接'),
         ),
       ],
     );
