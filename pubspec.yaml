@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   provider: ^6.1.1  # 状态管理
   web_socket_channel: ^3.0.3  # TCP/WebSocket 连接支持
+  flutter_libserialport: ^0.5.0  # 串口支持
   dio: ^5.8.0  # 网络请求库
 
 dev_dependencies:
