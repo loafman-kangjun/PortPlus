@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'tcp_debugger_page.dart';
+import 'connection_page.dart';
 import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -29,7 +29,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   static const List<Widget> _pages = <Widget>[
-    TcpDebuggerPage(),
+    ConnectionPage(),
     SettingsPage(),
   ];
 

@@ -4,14 +4,14 @@ import 'package:port_plus/components/connection_panel.dart';
 import 'package:port_plus/components/received_data_display.dart';
 import 'package:port_plus/components/send_data_panel.dart';
 
-class TcpDebuggerPage extends StatefulWidget {
-  const TcpDebuggerPage({super.key});
+class ConnectionPage extends StatefulWidget {
+  const ConnectionPage({super.key});
 
   @override
-  State<TcpDebuggerPage> createState() => _TcpDebuggerPageState();
+  State<ConnectionPage> createState() => _TcpDebuggerPageState();
 }
 
-class _TcpDebuggerPageState extends State<TcpDebuggerPage> {
+class _TcpDebuggerPageState extends State<ConnectionPage> {
   final TextEditingController _ipController =
       TextEditingController(text: '127.0.0.1');
   final TextEditingController _portController =
