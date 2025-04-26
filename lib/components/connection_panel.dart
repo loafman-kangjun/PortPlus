@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_libserialport/flutter_libserialport.dart';
 
 class ConnectionPanel extends StatelessWidget {
   final String protocol;
   final ValueChanged<String> onProtocolChanged;
-  final TextEditingController ipController;
+  final TextEditingController ipController; // 对于UART，该字段存放串口名称
   final TextEditingController portController; // 用于 TCP 的端口或 UART 的波特率
   final bool isConnected;
   final VoidCallback onConnect;
@@ -37,7 +38,7 @@ class ConnectionPanel extends StatelessWidget {
         case 'tcp':
           return 'IP 地址';
         case 'uart':
-          return '串口设备（如 COM3 或 /dev/ttyUSB0）';
+          return '串口设备'; // 改为简洁提示
         default:
           return '';
       }
@@ -54,8 +55,47 @@ class ConnectionPanel extends StatelessWidget {
       }
     }
 
+    // 根据协议，返回第一个输入区域组件
+    Widget firstFieldWidget() {
+      if (protocol == 'uart') {
+        // 获取系统中的可用串口列表
+        final ports = SerialPort.availablePorts;
+        // 如果 ipController 为空且有可用串口，预设第一个串口
+        if (ports.isNotEmpty && ipController.text.isEmpty) {
+          ipController.text = ports[0];
+        }
+        return DropdownButtonFormField<String>(
+          value: ipController.text.isNotEmpty ? ipController.text : (ports.isNotEmpty ? ports[0] : null),
+          decoration: InputDecoration(
+            labelText: firstFieldLabel(),
+            border: border,
+          ),
+          items: ports
+              .map((port) => DropdownMenuItem(
+                    value: port,
+                    child: Text(port),
+                  ))
+              .toList(),
+          onChanged: (newValue) {
+            if (newValue != null) {
+              ipController.text = newValue;
+            }
+          },
+        );
+      } else {
+        return TextField(
+          controller: ipController,
+          decoration: InputDecoration(
+            labelText: firstFieldLabel(),
+            border: border,
+          ),
+        );
+      }
+    }
+
     return Row(
       children: [
+        // 选择连接协议的下拉框
         SizedBox(
           width: 150,
           child: DropdownButtonFormField<String>(
@@ -100,18 +140,13 @@ class ConnectionPanel extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 16),
+        // 根据协议显示第一个输入区域（地址或串口下拉列表）
         Expanded(
           flex: 2,
-          child: TextField(
-            controller: ipController,
-            decoration: InputDecoration(
-              labelText: firstFieldLabel(),
-              border: border,
-            ),
-          ),
+          child: firstFieldWidget(),
         ),
         const SizedBox(width: 16),
-        // 仅在 TCP 或 UART 时显示第二输入框
+        // 仅在 TCP 或 UART 时显示第二输入框（端口或波特率）
         if (protocol == 'tcp' || protocol == 'uart') ...[
           Expanded(
             child: TextField(

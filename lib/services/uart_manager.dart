@@ -39,6 +39,6 @@ class UartManager {
     }
   }
 
-  /// UART 数据流，数据以 List<int> 形式输出
+  /// UART 数据流，数据以 `List<int>` 形式输出
   Stream<List<int>> get stream => _reader.stream;
 }
