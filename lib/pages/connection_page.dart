@@ -13,12 +13,18 @@ class ConnectionPage extends StatefulWidget {
   State<ConnectionPage> createState() => _ConnectionPageState();
 }
 
-class _ConnectionPageState extends State<ConnectionPage> {
+class _ConnectionPageState extends State<ConnectionPage>
+    with AutomaticKeepAliveClientMixin<ConnectionPage> {
+  @override
+  bool get wantKeepAlive => true;
+
   // 控制器：用于存放设备地址、端口/波特率和发送数据的文本输入值
-  final TextEditingController _ipController =
-      TextEditingController(text: 'COM3'); // 对于 UART，此处填写串口名称，例如 COM3
-  final TextEditingController _portController =
-      TextEditingController(text: '9600'); // 对于 UART，此处填写波特率
+  final TextEditingController _ipController = TextEditingController(
+    text: 'COM3',
+  ); // 对于 UART，此处填写串口名称，例如 COM3
+  final TextEditingController _portController = TextEditingController(
+    text: '9600',
+  ); // 对于 UART，此处填写波特率
   final TextEditingController _sendController = TextEditingController();
 
   // 接收到的数据列表
@@ -54,9 +60,10 @@ class _ConnectionPageState extends State<ConnectionPage> {
     try {
       if (_connectionProtocol == 'ws' || _connectionProtocol == 'tcp') {
         // 对于 ws/tcp，构造连接 URL
-        final url = _connectionProtocol == 'ws'
-            ? _ipController.text
-            : 'ws://${_ipController.text}:${_portController.text}';
+        final url =
+            _connectionProtocol == 'ws'
+                ? _ipController.text
+                : 'ws://${_ipController.text}:${_portController.text}';
         _socketManager = SocketManager();
         await _socketManager!.connect(url);
         setState(() {
@@ -76,9 +83,9 @@ class _ConnectionPageState extends State<ConnectionPage> {
                 _isConnected = false;
                 _socketManager = null;
               });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('连接错误: $error')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('连接错误: $error')));
             }
           },
           onDone: () {
@@ -114,9 +121,9 @@ class _ConnectionPageState extends State<ConnectionPage> {
                 _isConnected = false;
                 _uartManager = null;
               });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('UART 连接错误: $error')),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('UART 连接错误: $error')));
             }
           },
           onDone: () {
@@ -129,16 +136,16 @@ class _ConnectionPageState extends State<ConnectionPage> {
           },
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('不支持的连接协议')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('不支持的连接协议')));
         return;
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('连接失败: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('连接失败: $e')));
       }
     }
   }
@@ -158,9 +165,9 @@ class _ConnectionPageState extends State<ConnectionPage> {
         _sendController.clear();
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('发送失败: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('发送失败: $e')));
     }
   }
 
@@ -176,6 +183,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('WebSocket / UART 调试器'),
@@ -198,9 +206,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
               onConnect: _connect,
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: ReceivedDataDisplay(receivedData: _receivedData),
-            ),
+            Expanded(child: ReceivedDataDisplay(receivedData: _receivedData)),
             const SizedBox(height: 16),
             SendDataPanel(
               sendController: _sendController,
