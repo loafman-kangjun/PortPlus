@@ -1,7 +1,8 @@
-name: Flutter build windows
+name: Flutter Build
 on: [push]
+
 jobs:
-  Explore-GitHub-Actions:
+  Build_Windows:
     runs-on: windows-latest
     steps:
       - name: Clone repository
@@ -9,7 +10,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable # or: beta, master (or main)
+          channel: stable
       - run: flutter --version
       - run: flutter pub get
       - run: flutter build windows --release
@@ -17,3 +18,37 @@ jobs:
         with:
           name: flutter-win
           path: .\build\windows\x64\runner\Release
+
+  Build_Android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter --version
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flutter-apk
+          path: .\build\app\outputs\flutter-apk\app-release.apk
+
+  Build_Linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter --version
+      - run: flutter pub get
+      - run: flutter build linux --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flutter-linux
+          path: ./build/linux/x64/release/bundle
